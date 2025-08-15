@@ -19,7 +19,7 @@ class Reader():
     _PROJ_REPORT_SHEET_NAME = "项目详细信息"
     _CONTRACT_REPORT_SHEET_NAME = "sheet"
 
-    _DATETIME_TO_VALIDATE = datetime.datetime(year=2025, month=8, day=14)
+    _DATETIME_TO_VALIDATE = datetime.datetime(year=2025, month=8, day=15)
     _DATETIME_TODAY = datetime.datetime.today()
     _FORMAT_OF_PRINTED_DATE = "%Y-%m-%d"
     def __init__(self):
@@ -55,7 +55,7 @@ class Reader():
 
     def readContractReport(self):
         print(
-            f"运行读取项目合同全量表，文件名：\n- {self._CONTRACT_TABLE_NAME}\n报告生成日期：{self._DATETIME_TODAY}...")
+            f"运行读取合同全量表，文件名：\n- {self._CONTRACT_TABLE_NAME}\n报告生成日期：{self._DATETIME_TODAY}...")
         contracts_table = ContractReport(os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH), self._CONTRACT_TABLE_NAME,
                                    self._CONTRACT_REPORT_SHEET_NAME)
         df_contracts = contracts_table.importExcelSheet()
