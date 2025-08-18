@@ -1,14 +1,15 @@
 import os
-
+import pandas as pd
 from entities.subContract import SubContract
 from entities.mainContract import MainContract
 from entities.projectReport import ProjectReport
 from entities.ContractReport import ContractReport
 import datetime
-
+import errno
 class Reader():
     _CURR_PROJ_PATH = os.getcwd()
     _DATA_PATH = r"data"
+    _DATA_OUTPUT_PATH = r"data/output"
     _SUB_CONTRACT_NAME = r"工程分包合同查询20250814172514.xlsx"
     _MAIN_CONTRACT_NAME = r"工程总包合同查询20250814172359.xlsx"
     _PROJ_TABLE_NAME = r"工程详情信息导出数据-2025-08-14.xlsx"
@@ -62,3 +63,7 @@ class Reader():
         print(f"完成读取...")
         return df_contracts
 
+    def readDataFrame(self, filename):
+        if not os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH, filename):
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filename)
+        return pd.read_excel(os.path.join(self._CURR_PROJ_PATH, self._DATA_OUTPUT_PATH, filename))
