@@ -3,6 +3,7 @@ import os
 import datetime
 import pandas as pd
 
+
 class Writer():
     _CURR_PROJ_PATH = os.getcwd()
     _DATA_PATH = r"data/output"
@@ -11,10 +12,10 @@ class Writer():
     _DATETIME_TO_VALIDATE = datetime.datetime(year=2025, month=8, day=15)
     _DATETIME_TODAY = datetime.datetime.today()
     _FORMAT_OF_PRINTED_DATE = "%Y-%m-%d"
-    _DESIRED_COL_ORDER = ['group_id',"organization", "department", "project_id", "project_name", "nc_code", 'fin_code',
+    _DESIRED_COL_ORDER = ['group_id', "organization", "department", "project_id", "project_name", "nc_code", 'fin_code',
                           "project_sum", "proj_category_1",
                           "proj_category_2", "proj_type", "contract_model", "voltage_lvl", "proj_manager",
-                          "proj_status",'proj_source', "proj_regis_date", "proj_startDate", "proj_endDate",
+                          "proj_status", 'proj_source', "proj_regis_date", "proj_startDate", "proj_endDate",
                           "contract_id", "contract_name", "money_flow", "contract_partner", "contract_type",
                           "contract_valid_date", "contract_status", "contract_sum"
                           ]
@@ -55,9 +56,6 @@ class Writer():
         df.to_excel(os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH, file_name), index=False)
         print(f"完成写入...")
 
-
-
-
     def reorderCols(self, df):
         df_ordered = df[self._DESIRED_COL_ORDER]
         return df_ordered
@@ -76,7 +74,6 @@ class Writer():
         df['group_id'] = changes.cumsum()
         df['group_id'] = df['group_id'].mask(~changes, None)
         return df
-
 
     def writeFinalContractTable(self, df):
         print(f"运行写入合同台账，文件名：\n- {self._OUTPUT_CONTRACT_TABLE_NAME}\n报告生成日期：{self._DATETIME_TODAY}...")
@@ -97,17 +94,18 @@ class Writer():
         print(f"完成写入...")
 
     def writeComments(self):
-        data = {'序号':[1, 2, 3, 4,5,6,7,8,9], '校验规则':[
+        data = {'序号': [1, 2, 3, 4, 5, 6, 7, 8, 9], '校验规则': [
             "字段顺序为工程在前，关联的合同在后",
             '前端不可修改或者不允许修改字段进行置灰',
             '进行了立项日期<计划开工日期<计划竣工日期校验，不满足条件的，计划开工日期，计划竣工日期红色高亮',
-            '总包合同金额不等于项目金额的，红色高亮 ',
-            '合同资金流向：收款：绿色高亮，付款：蓝色高亮 ',
-            '合同未关联项目的，项目编码一栏红色高亮',
-            '标红错误的项目状态，当前日期大于计划开工日期，小于竣工日期，立项或在建，当前日期大于计划竣工日期 竣工，结算，结项',
+            '总包合同金额不等于项目金额的，项目金额红色高亮',
+            '合同资金流向：收款：绿色高亮，付款：蓝色高亮',
+            '合同未关联项目的，即项目编码为空的，项目编码一栏红色高亮',
+            '标红错误的项目状态，当前日期大于计划开工日期，小于竣工日期，项目状态为以下之一：立项或在建，当前日期大于计划竣工日期，项目状态为以下之一：竣工，结算，结项',
             '第一列为项目序号，关联同一个项目的一组合同，只有第一行项目信息高亮',
-            '项目来源需符合项目大类，用户工程：系统外，电网工程：系统内，不满足的红色高亮'
+            '项目来源需符合项目大类，用户工程：系统外，电网工程：系统内，不满足的项目来源一栏红色高亮'
         ]}
         df = pd.DataFrame(data)
-        df.to_excel(os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH, self._OUTPUT_CONTRACT_TABLE_NAME),sheet_name="校验规则说明",
-                    index=False)
+        with pd.ExcelWriter(os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH, self._OUTPUT_CONTRACT_TABLE_NAME),
+                            mode='a', engine='openpyxl', if_sheet_exists='new') as writer:
+            df.to_excel(writer, sheet_name="校验规则说明", index=False)

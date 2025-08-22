@@ -75,6 +75,6 @@ def writeComments():
 
 if __name__ == '__main__':
     # modifyTables()
-    addStyleToTables()
-    # writeComments()
+    # addStyleToTables()
+    writeComments()
 
