@@ -12,6 +12,8 @@ class Writer():
     _DATETIME_TO_VALIDATE = datetime.datetime(year=2025, month=8, day=15)
     _DATETIME_TODAY = datetime.datetime.today()
     _FORMAT_OF_PRINTED_DATE = "%Y-%m-%d"
+    _PRINTED_DATE = _DATETIME_TODAY.__format__(_FORMAT_OF_PRINTED_DATE)
+    _VERSION = "v1.0"
     _DESIRED_COL_ORDER = ['group_id', "organization", "department", "project_id", "project_name", "nc_code", 'fin_code',
                           "project_sum", "proj_category_1",
                           "proj_category_2", "proj_type", "contract_model", "voltage_lvl", "proj_manager",
@@ -49,7 +51,7 @@ class Writer():
                       }
 
     def __init__(self):
-        print(f'正在写入以下日期的数据 {self._DATETIME_TO_VALIDATE.__format__(self._FORMAT_OF_PRINTED_DATE)}')
+        print(f'正在写入以下日期的数据 {self._PRINTED_DATE}')
 
     def writeDataframeToExcel(self, df, file_name):
         print(f"运行写入台账，文件名：\n- {file_name}\n报告生成日期：{self._DATETIME_TODAY}...")
@@ -61,14 +63,6 @@ class Writer():
         return df_ordered
 
     def setGroupId(self, df: pd.DataFrame):
-        # index_ls = [None] * len(df)
-        # counter = 1
-        # df.loc[0, 'project_id'] = counter
-        # for i in range(1, len(df)):
-        #     if df.at[i, 'project_id'] != df.at[i-1, 'project_id']:
-        #         counter+=1
-        #         index_ls[i] = counter
-        # df['group_id'] = index_ls
         group_id = df.groupby('project_id').ngroup()
         changes = group_id.diff() != 0
         df['group_id'] = changes.cumsum()
@@ -76,9 +70,10 @@ class Writer():
         return df
 
     def writeFinalContractTable(self, df):
-        print(f"运行写入合同台账，文件名：\n- {self._OUTPUT_CONTRACT_TABLE_NAME}\n报告生成日期：{self._DATETIME_TODAY}...")
+        print(f"运行写入台账，文件名：\n- {self._OUTPUT_CONTRACT_TABLE_NAME}\n报告生成日期：{self._DATETIME_TODAY}...")
         df.rename(columns=self._NEW_COL_NAMES, inplace=True)
-        df.to_excel(os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH, self._OUTPUT_CONTRACT_TABLE_NAME),
+        df.to_excel(os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH,
+                                 self.add_version_number_to_filename(self._OUTPUT_CONTRACT_TABLE_NAME)),
                     index=False)._save()
         print(f"完成写入...")
 
@@ -106,6 +101,20 @@ class Writer():
             '项目来源需符合项目大类，用户工程：系统外，电网工程：系统内，不满足的项目来源一栏红色高亮'
         ]}
         df = pd.DataFrame(data)
-        with pd.ExcelWriter(os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH, self._OUTPUT_CONTRACT_TABLE_NAME),
+        with pd.ExcelWriter(os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH,
+                                         self.add_version_number_to_filename(self._OUTPUT_CONTRACT_TABLE_NAME)),
                             mode='a', engine='openpyxl', if_sheet_exists='new') as writer:
             df.to_excel(writer, sheet_name="校验规则说明", index=False)
+
+    def add_version_number_to_filename(self, oldname: str) -> str:
+        base, ext = os.path.splitext(oldname)
+        new_name = f"{base}_{self._VERSION}_{self._PRINTED_DATE}{ext}"
+        return new_name
+
+    @classmethod
+    def get_output_table_name(cls):
+        return cls._OUTPUT_CONTRACT_TABLE_NAME
+
+    @classmethod
+    def get_printed_date(cls):
+        return cls._PRINTED_DATE
