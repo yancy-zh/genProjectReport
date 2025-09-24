@@ -27,10 +27,10 @@ def modifyTables():
 
 def addStyleToTables():
     reader = Reader()
-    df = reader.readDataFrame("df_reorderedbk.xlsx")
+    df = reader.readDataFrame("df_reordered.xlsx")
     mystyler = MyStyler(df)
     mystyler.canNotModifyCols()
-    mystyler.highLightProjCategory2()
+    # mystyler.highLightProjCategory2()
     mystyler.highlightMoneyFlowIn()
     mystyler.highlightMoneyFlowOut()
     validator = Validator(df)
@@ -68,13 +68,14 @@ def modifyProjTable():
     writer = Writer()
     writer.writeFinalProjTable(sf)
 
-def writeComments():
+def writeCommentsAndDropdownList():
     writer = Writer()
     writer.writeComments()
 
 
+
 if __name__ == '__main__':
     # modifyTables()
-    # addStyleToTables()
-    writeComments()
+    addStyleToTables()
+    # writeCommentsAndDropdownList()
 

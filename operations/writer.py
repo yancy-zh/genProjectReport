@@ -1,7 +1,7 @@
 import os
-
 import datetime
 import pandas as pd
+import xlsxwriter
 
 
 class Writer():
@@ -9,11 +9,12 @@ class Writer():
     _DATA_PATH = r"data/output"
     _OUTPUT_CONTRACT_TABLE_NAME = '业+数据治理台账.xlsx'
     _OUTPUT_PROJ_TABLE_NAME = '业+数据治理台账_项目.xlsx'
-    _DATETIME_TO_VALIDATE = datetime.datetime(year=2025, month=8, day=15)
+    _DATETIME_TO_VALIDATE = datetime.datetime(year=2025, month=8, day=23)
     _DATETIME_TODAY = datetime.datetime.today()
     _FORMAT_OF_PRINTED_DATE = "%Y-%m-%d"
     _PRINTED_DATE = _DATETIME_TODAY.__format__(_FORMAT_OF_PRINTED_DATE)
-    _VERSION = "v1.0"
+    _VERSION = "v1.1"
+    TOTAL_NUM_ROWS = 0
     _DESIRED_COL_ORDER = ['group_id', "organization", "department", "project_id", "project_name", "nc_code", 'fin_code',
                           "project_sum", "proj_category_1",
                           "proj_category_2", "proj_type", "contract_model", "voltage_lvl", "proj_manager",
@@ -53,9 +54,29 @@ class Writer():
     def __init__(self):
         print(f'正在写入以下日期的数据 {self._PRINTED_DATE}')
 
+    def setCurrWorkingPath(self, absPath):
+        self._CURR_PROJ_PATH = absPath
+
     def writeDataframeToExcel(self, df, file_name):
         print(f"运行写入台账，文件名：\n- {file_name}\n报告生成日期：{self._DATETIME_TODAY}...")
-        df.to_excel(os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH, file_name), index=False)
+        # add dropdown menus
+        dropdown_options = {"proj_status": ['O', "立项", "新建", "在建", "竣工", "结算", "结算完成", "结项", "暂停"],
+                            "contract_model": ['L', 'EPC', "PC", "EC", "单设计", "单施工", "单设备", "DB"],
+                            "voltage_lvl": ['M', "0.4kV", "10kV", "110kV", "20kV", "220kV", "300kV", "330kV", "35kV",
+                                            "35kV-110kV"]}
+        writer = pd.ExcelWriter(os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH, file_name),
+                                engine="xlsxwriter")
+        workbook = writer.book
+        df.to_excel(writer, sheet_name='Sheet1', index=False)
+        worksheet = writer.sheets['Sheet1']
+        for key in dropdown_options.keys():
+            for row_num in range(1, len(df) + 1):
+                worksheet.data_validation(dropdown_options[key][0] + str(row_num + 1), {  # dropdown_options['proj_status'][0]
+                    'validate': 'list',
+                    'source': dropdown_options[key][1:]
+                })
+            print(f"dropdown for key {key} is added. ")
+        writer.close()
         print(f"完成写入...")
 
     def reorderCols(self, df):
@@ -70,7 +91,8 @@ class Writer():
         return df
 
     def writeFinalContractTable(self, df):
-        print(f"运行写入台账，文件名：\n- {self._OUTPUT_CONTRACT_TABLE_NAME}\n报告生成日期：{self._DATETIME_TODAY}...")
+        print(
+            f"运行写入台账，文件名：\n- {self.add_version_number_to_filename(self._OUTPUT_CONTRACT_TABLE_NAME)}\n报告生成日期：{self._DATETIME_TODAY}...")
         df.rename(columns=self._NEW_COL_NAMES, inplace=True)
         df.to_excel(os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH,
                                  self.add_version_number_to_filename(self._OUTPUT_CONTRACT_TABLE_NAME)),
@@ -101,6 +123,7 @@ class Writer():
             '项目来源需符合项目大类，用户工程：系统外，电网工程：系统内，不满足的项目来源一栏红色高亮'
         ]}
         df = pd.DataFrame(data)
+        self.TOTAL_NUM_ROWS = len(df)
         with pd.ExcelWriter(os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH,
                                          self.add_version_number_to_filename(self._OUTPUT_CONTRACT_TABLE_NAME)),
                             mode='a', engine='openpyxl', if_sheet_exists='new') as writer:
@@ -118,3 +141,20 @@ class Writer():
     @classmethod
     def get_printed_date(cls):
         return cls._PRINTED_DATE
+
+    def dropdown_validation(self, df: pd.DataFrame):
+        dropdown_options = {"proj_status": ['O', "立项", "新建", "在建"],
+                            "contract_model": ['L', "PC", "单设计"],
+                            "voltage_lvl": [3, "0.4kV", "10kV", "20kV"]}
+        writer = pd.ExcelWriter(os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH,
+                                             self.add_version_number_to_filename(self._OUTPUT_CONTRACT_TABLE_NAME)),
+                                mode='a', engine="xlsxwriter")
+        workbook = writer.book
+        df.to_excel(writer, sheet_name='Sheet1')
+        worksheet = writer.sheets['Sheet1']
+        for row_num in range(1, len(df) + 1):
+            worksheet.data_validation('O' + str(row_num + 2), {  # dropdown_options['proj_status'][0]
+                'validate': 'list',
+                'source': dropdown_options["proj_status"][1:]
+            })
+        writer.close()
