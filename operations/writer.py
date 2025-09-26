@@ -1,7 +1,12 @@
 import os
 import datetime
+
+import openpyxl
 import pandas as pd
 import xlsxwriter
+from styleframe import StyleFrame
+from openpyxl import load_workbook
+from openpyxl.worksheet.datavalidation import DataValidation
 
 
 class Writer():
@@ -9,11 +14,11 @@ class Writer():
     _DATA_PATH = r"data/output"
     _OUTPUT_CONTRACT_TABLE_NAME = '业+数据治理台账.xlsx'
     _OUTPUT_PROJ_TABLE_NAME = '业+数据治理台账_项目.xlsx'
-    _DATETIME_TO_VALIDATE = datetime.datetime(year=2025, month=8, day=23)
+    _DATETIME_TO_VALIDATE = datetime.datetime(year=2025, month=9, day=23)
     _DATETIME_TODAY = datetime.datetime.today()
     _FORMAT_OF_PRINTED_DATE = "%Y-%m-%d"
     _PRINTED_DATE = _DATETIME_TODAY.__format__(_FORMAT_OF_PRINTED_DATE)
-    _VERSION = "v1.1"
+    _VERSION = "v1.2"
     TOTAL_NUM_ROWS = 0
     _DESIRED_COL_ORDER = ['group_id', "organization", "department", "project_id", "project_name", "nc_code", 'fin_code',
                           "project_sum", "proj_category_1",
@@ -57,7 +62,7 @@ class Writer():
     def setCurrWorkingPath(self, absPath):
         self._CURR_PROJ_PATH = absPath
 
-    def writeDataframeToExcel(self, df, file_name):
+    def writeDataframeToExcelWDropdownMenus(self, df, file_name):
         print(f"运行写入台账，文件名：\n- {file_name}\n报告生成日期：{self._DATETIME_TODAY}...")
         # add dropdown menus
         dropdown_options = {"proj_status": ['O', "立项", "新建", "在建", "竣工", "结算", "结算完成", "结项", "暂停"],
@@ -71,12 +76,18 @@ class Writer():
         worksheet = writer.sheets['Sheet1']
         for key in dropdown_options.keys():
             for row_num in range(1, len(df) + 1):
-                worksheet.data_validation(dropdown_options[key][0] + str(row_num + 1), {  # dropdown_options['proj_status'][0]
-                    'validate': 'list',
-                    'source': dropdown_options[key][1:]
-                })
+                worksheet.data_validation(dropdown_options[key][0] + str(row_num + 1),
+                                          {  # dropdown_options['proj_status'][0]
+                                              'validate': 'list',
+                                              'source': dropdown_options[key][1:]
+                                          })
             print(f"dropdown for key {key} is added. ")
         writer.close()
+        print(f"完成写入...")
+
+    def writeDataframeToExcel(self, df, file_name):
+        print(f"运行写入台账，文件名：\n- {file_name}\n报告生成日期：{self._DATETIME_TODAY}...")
+        df.to_excel(os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH, file_name), index=False)
         print(f"完成写入...")
 
     def reorderCols(self, df):
@@ -105,6 +116,31 @@ class Writer():
                     index=False)._save()
         print(f"完成写入...")
 
+    def addDropdownList(self, len_sf):
+        # TODO add dropdown validation
+        print(f"运行写入项目台账，文件名：\n- {self._OUTPUT_PROJ_TABLE_NAME}\n报告生成日期：{self._DATETIME_TODAY}...")
+
+        # read excel file
+        fullpath = os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH,
+                                self.add_version_number_to_filename(self._OUTPUT_CONTRACT_TABLE_NAME))
+        with pd.ExcelWriter(fullpath, engine="openpyxl", if_sheet_exists="overlay", mode='a') as writer:
+            # workbook = load_workbook(fullpath)
+            workbook = writer.book
+            sheet = writer.sheets['Sheet1']
+            # add dropdown menus
+            dropdown_options = {"proj_status": ['O', "立项", "新建", "在建", "竣工", "结算", "结算完成", "结项", "暂停"],
+                                "contract_model": ['L', 'EPC', "PC", "EC", "单设计", "单施工", "单设备", "DB"],
+                                "voltage_lvl": ['M', "0.4kV", "10kV", "110kV", "20kV", "220kV", "300kV", "330kV", "35kV",
+                                                "35kV-110kV"]}
+            for key in dropdown_options.keys():
+                source = '"{}"'.format(','.join(dropdown_options[key][1:]))
+                dv = DataValidation(type="list", formula1=source, allowBlank=True, showDropDown=True)
+                dv.add(dropdown_options[key][0] + '2:' + dropdown_options[key][0] + str(len_sf))
+                sheet.add_data_validation(dv)
+            workbook.save(fullpath)
+        writer.close()
+        print(f"完成写入...")
+
     def writeStyleFrame(self, sf):
         print(f"write styleframe，文件名：\n- styleframe.xlsx \n报告生成日期：{self._DATETIME_TODAY}...")
         sf.to_excel(os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH, "styleframe.xlsx"))._save()
@@ -118,12 +154,11 @@ class Writer():
             '总包合同金额不等于项目金额的，项目金额红色高亮',
             '合同资金流向：收款：绿色高亮，付款：蓝色高亮',
             '合同未关联项目的，即项目编码为空的，项目编码一栏红色高亮',
-            '标红错误的项目状态，当前日期大于计划开工日期，小于竣工日期，项目状态为以下之一：立项或在建，当前日期大于计划竣工日期，项目状态为以下之一：竣工，结算，结项',
+            '标红错误的项目状态，当前日期大于计划开工日期，小于竣工日期，项目状态为以下之一：在建，当前日期大于计划竣工日期，项目状态为以下之一：竣工，结算，结项',
             '第一列为项目序号，关联同一个项目的一组合同，只有第一行项目信息高亮',
-            '项目来源需符合项目大类，用户工程：系统外，电网工程：系统内，不满足的项目来源一栏红色高亮'
+            '项目来源需符合项目小类里面括号中的部分，用户工程，即括号中的部分是"用户"，项目来源是：系统外，电网工程，即括号中的部分是"电网"，项目来源是：系统内，不满足的项目来源一栏红色高亮。'
         ]}
         df = pd.DataFrame(data)
-        self.TOTAL_NUM_ROWS = len(df)
         with pd.ExcelWriter(os.path.join(self._CURR_PROJ_PATH, self._DATA_PATH,
                                          self.add_version_number_to_filename(self._OUTPUT_CONTRACT_TABLE_NAME)),
                             mode='a', engine='openpyxl', if_sheet_exists='new') as writer:

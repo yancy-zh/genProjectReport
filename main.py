@@ -71,11 +71,11 @@ def modifyProjTable():
 def writeCommentsAndDropdownList():
     writer = Writer()
     writer.writeComments()
-
+    # writer.addDropdownList(12284)
 
 
 if __name__ == '__main__':
     # modifyTables()
-    addStyleToTables()
-    # writeCommentsAndDropdownList()
+    # addStyleToTables()
+    writeCommentsAndDropdownList()
 

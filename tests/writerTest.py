@@ -20,4 +20,4 @@ class TestWriter(unittest.TestCase):
         df = reader.readProjectReport()
         output_filename = "testtable.xlsx"
         writer.setCurrWorkingPath(absPath)
-        self.assertEqual(None, writer.writeDataframeToExcel(df, output_filename))
+        self.assertEqual(None, writer.writeDataframeToExcelWDropdownMenus(df, output_filename))

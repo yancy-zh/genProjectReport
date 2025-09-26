@@ -16,7 +16,7 @@ class Reader():
     _SUB_CONTRACT_NAME = r"工程分包合同查询20250923163121.xlsx"
     _MAIN_CONTRACT_NAME = r"工程总包合同查询20250923162834.xlsx"
     _PROJ_TABLE_NAME = r"工程详情信息导出数据-2025-09-23.xlsx"
-    _CONTRACT_TABLE_NAME = r"合同信息查询0923.xlsx"
+    _CONTRACT_TABLE_NAME = r"合同信息查询0926.xlsx"
 
     _SUB_CONTRACT_SHEET_NAME = "工程分包"
     _MAIN_CONTRACT_SHEET_NAME = "工程总包"
@@ -60,7 +60,8 @@ class Reader():
         df_projs = proj_table.importExcelSheet()
         print(f"完成读取...")
         return df_projs
-
+    def readFinalTable(self):
+        print
     def readContractReport(self):
         print(
             f"运行读取合同全量表，文件名：\n- {self._CONTRACT_TABLE_NAME}\n报告生成日期：{self._DATETIME_TODAY}...")

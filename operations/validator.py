@@ -95,7 +95,7 @@ class Validator:
             return
         filtered_df_loc = self.df.loc[
             ((self._DATETIME_TODAY > self.start_date_col) & (self._DATETIME_TODAY < self.end_date_col) &
-             ~self.df['proj_status'].isin(['立项', '在建']))
+             ~self.df['proj_status'].isin(['在建']))
             | ((self._DATETIME_TODAY > self.end_date_col) & (
                 ~self.df['proj_status'].isin(['竣工', '结算', '结算完成', '结项'])))
             ]
@@ -107,6 +107,6 @@ class Validator:
 
     def validateProjCategory1(self):
         filtered_df_loc = self.df.loc[
-            ((self.df['proj_category_1'] == "用户工程") & (self.df['proj_source'] != "系统外"))
-            | ((self.df['proj_category_1'] == "电网工程") & (self.df['proj_source'] != "系统内"))]
+            ( (  self.df['proj_category_2'].str.contains("(用户)") )& (self.df['proj_source'] != "系统外"))
+            | ((  self.df['proj_category_2'].str.contains("(电网)") )& (self.df['proj_source'] != "系统内"))]
         return filtered_df_loc.index.tolist()
